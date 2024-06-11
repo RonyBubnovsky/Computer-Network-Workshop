@@ -23,8 +23,8 @@ def wait_for_accept():
                     connect_sock.send(data)
                     reply_data = connect_sock.recv(1024)
                     print(f"{chosen_port} server reply:", reply_data.decode())
-                    if (reply_data.decode == "World\n End"):
-                        connect_sock.close()
+                    if (reply_data.decode() == "World\nEnd"):
+                        break
             except Exception as e:
                 print(f"No server is listening on port {port}")
                 
@@ -38,8 +38,9 @@ def respond_to_client(conn_socket, client_address):
     while True:
         data = conn_socket.recv(1024)
         print('recieved from', client_address, 'text', data.decode())
-        if(data.decode() == 'Hello'):
-            conn_socket.send('World\n End'.encode())
+        if(data.decode() == 'Hello' or data.decode() == 'hello'):
+            conn_socket.send('World\nEnd'.encode())
+            break
         conn_socket.send(b'Echo: ' + data)
         
 while True:
