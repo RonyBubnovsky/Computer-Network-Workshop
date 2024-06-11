@@ -21,6 +21,7 @@ def wait_for_accept():
                 print(f"{chosen_port} connected to {port} successfully")
                 connect_sock.send("Hello".encode())
                 print(f"{port} Server reply:", connect_sock.recv(1024).decode())
+                connect_sock.close()
             except ConnectionRefusedError:
                 print(f"No server is listening on port {port}")
                 
@@ -39,5 +40,7 @@ def respond_to_client(conn_socket, client_address):
 while True:
     conn, client_address = sock.accept()
     print('new connection from', client_address)
-    respond_to_client(conn,client_address)
+    threading.Thread(target=respond_to_client, args=(conn, client_address)).start()
+    
+
     
