@@ -33,8 +33,7 @@ def respond_to_client(conn_socket, client_address):
     print('start listening from', client_address)
     data = conn_socket.recv(1024)
     print('recieved from', client_address, 'text', data.decode())
-    if(data.decode() == 'Hello'):
-        conn_socket.send('World\nEnd'.encode())
+    conn_socket.send('World\nEnd'.encode())
             
         
 while True:
