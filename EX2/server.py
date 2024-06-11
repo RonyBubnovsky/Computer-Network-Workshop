@@ -41,6 +41,7 @@ while True:
     conn, client_address = sock.accept()
     print('new connection from', client_address)
     threading.Thread(target=respond_to_client, args=(conn, client_address)).start()
+    print("hey")
     
     
 
