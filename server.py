@@ -31,12 +31,11 @@ threading.Thread(target=wait_for_accept).start()
         
 def respond_to_client(conn_socket, client_address):
     print('start listening from', client_address)
-    while True:
-        data = conn_socket.recv(1024)
-        print('recieved from', client_address, 'text', data.decode())
-        if(data.decode() == 'Hello'):
-            conn_socket.send('World\nEnd'.encode())
-            break
+    data = conn_socket.recv(1024)
+    print('recieved from', client_address, 'text', data.decode())
+    if(data.decode() == 'Hello'):
+        conn_socket.send('World\nEnd'.encode())
+            
         
 while True:
     conn, client_address = sock.accept()
