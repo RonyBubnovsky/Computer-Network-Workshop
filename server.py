@@ -18,13 +18,8 @@ def wait_for_accept():
                 connect_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
                 connect_sock.connect(('127.0.0.1', port))
                 print(f"{chosen_port} connected to {port} successfully")
-                while True:
-                    data = input('Enter line:').strip().encode()
-                    connect_sock.send(data)
-                    reply_data = connect_sock.recv(1024)
-                    print(f"{chosen_port} server reply:", reply_data.decode())
-                    if (reply_data.decode() == "World\nEnd"):
-                        break
+                connect_sock.send("Hello".encode())
+                print(f"{port} Server reply:", connect_sock.recv(1024).decode())
             except Exception as e:
                 print(f"No server is listening on port {port}")
                 
@@ -38,7 +33,7 @@ def respond_to_client(conn_socket, client_address):
     while True:
         data = conn_socket.recv(1024)
         print('recieved from', client_address, 'text', data.decode())
-        if(data.decode() == 'Hello' or data.decode() == 'hello'):
+        if(data.decode() == 'Hello'):
             conn_socket.send('World\nEnd'.encode())
             break
         conn_socket.send(b'Echo: ' + data)
