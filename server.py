@@ -37,7 +37,6 @@ def respond_to_client(conn_socket, client_address):
         if(data.decode() == 'Hello'):
             conn_socket.send('World\nEnd'.encode())
             break
-        conn_socket.send(b'Echo: ' + data)
         
 while True:
     conn, client_address = sock.accept()
