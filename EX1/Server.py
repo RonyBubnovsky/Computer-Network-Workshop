@@ -25,13 +25,16 @@ try:
                 print("Tried to register an existing client.")
 
             else:
-                dest_user, msg = data.decode().split(' ', 1)
-                dest_user = dest_user.strip()
-                if dest_user in opened_user["name_to_addr"].keys():
-                    sock.sendto(msg.encode() + " from ".encode() + opened_user["addr_to_name"][addr].encode(),
-                                opened_user["name_to_addr"][dest_user])
-                else:
-                    sock.sendto("There isn't such a user".encode(), addr)
+                try:
+                    dest_user, msg = data.decode().split(' ', 1)
+                    dest_user = dest_user.strip()
+                    if dest_user in opened_user["name_to_addr"].keys():
+                        sock.sendto(msg.encode() + " from ".encode() + opened_user["addr_to_name"][addr].encode(),
+                                    opened_user["name_to_addr"][dest_user])
+                    else:
+                        sock.sendto("There isn't such a user".encode(), addr)
+                except Exception:
+                    print("Invalid Message Format")
 
 finally:
     sock.close()
