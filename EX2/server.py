@@ -22,7 +22,6 @@ def wait_for_accept():
                 connect_sock.send("Hello".encode())
                 print(f"{port} Server reply:", connect_sock.recv(1024).decode())
                 connect_sock.close()
-                sock.close()
             except ConnectionRefusedError:
                 print(f"No server is listening on port {port}")
                 
