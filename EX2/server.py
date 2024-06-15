@@ -1,7 +1,7 @@
 import socket
 import threading
 
-ports_list = [5000,5010,5020,5030,5041]
+ports_list = [4000,4010,4020,4030,4040]
 index_choice = int(input("Choose an index [0-4] :"))
 chosen_port = ports_list[index_choice]
 
