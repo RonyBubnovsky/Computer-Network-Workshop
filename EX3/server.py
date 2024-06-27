@@ -63,4 +63,15 @@ while True:
     conn, client_address = sock.accept()
     print('new connection from', client_address)
     threading.Thread(target=respond_to_client, args=(conn, client_address)).start()
+<<<<<<< HEAD
     
+=======
+
+
+    
+
+    
+    
+
+    
+>>>>>>> 28485212dac0dc6c5517469c5fe7972e0d60773f
