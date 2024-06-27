@@ -75,7 +75,7 @@ def respond_to_client(conn_socket, client_address):
     print('start listening from', client_address)
     data = conn_socket.recv(6)
     type, subtype, length, sublen = struct.unpack('>bbhh', data)
-    if type == 0 and subtype == 0: # the client requested my clique
+    if type == 0 and subtype == 0: # the other server requested my clique
         print("request to send clique unpacked\n")
         port_to_add = conn_socket.recv(4) # the port i need to add to my dict
         servers_im_connected_to[int((port_to_add.decode()))] = client_address # add the port that connects to me to my dict
