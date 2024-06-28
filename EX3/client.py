@@ -26,7 +26,12 @@ def connect_client_to_server(socket):
 connect_client_to_server(socket)
 
 def wait_for_messages(socket):
-    print("\n\nthe message :", socket.recv(1024).decode())
+    recieved_message_header = socket.recv(6)
+    type, subtype, length, sublen = struct.unpack('>bbhh', recieved_message_header)
+    if type == 3: # recieved message header from client
+        sender, reciever = socket.recv(sublen).decode().split('\0') # Unpacking the sender and reciever names
+        message = socket.recv(length-sublen).decode()[1:] # Unpacking the actual message
+        print(f"Message from {sender} to {reciever}: {message}\n")
 
 threading.Thread(target=wait_for_messages, args=(socket,)).start()
 

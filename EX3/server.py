@@ -84,24 +84,26 @@ def handle_clique_request(conn_socket, client_address):
         conn_socket.send(ip_and_ports_string[:-1].encode())
         print("clique to send sent\n")         
 
+def forward_message_between_clients_in_the_same_server(receiver, actual_message, conn_socket):
+    print(f"{receiver} is connected to this server. Forwarding message to {receiver} ...\n")
+    for client, socket in connected_clients.items():
+        if socket == conn_socket: # Finding the source client
+            message_to_send = client +'\0' + receiver + ' ' + actual_message
+            sublength = len(client +'\0' + receiver)
+            data = struct.pack('>bbhh', 3,0, len(message_to_send), sublength)
+            connected_clients[receiver].send(data)
+            connected_clients[receiver].send(message_to_send.encode())
+    
 def wait_for_message_from_client(conn_socket):
     header = conn_socket.recv(6)
     type, subtype, length, sublen = struct.unpack('>bbhh', header)
     if type == 3 and subtype == 0: # recieved message header from client
-        sender = ''
-        message_to_send = ''
-        data = ''
         print("recieved message header from client\n")
         receiver = conn_socket.recv(sublen).decode() # extracting the name of the destination client
         actual_message = conn_socket.recv(length-sublen).decode()[1:] # extracting the actual message without spacebar
         if receiver in connected_clients.keys():
-            print(f"{receiver} is connected to this server. Forwarding message to {receiver} ...\n")
-            for client, socket in connected_clients.items():
-                if socket == conn_socket: # Finding the source client
-                    sender = client
-                    message_to_send = sender +'\0' + receiver + ' ' + actual_message
-                    data = struct.pack('>bbhh', 4,0, len(message_to_send), 0)
-                    connected_clients[receiver].send(message_to_send.encode())
+            forward_message_between_clients_in_the_same_server(receiver, actual_message, conn_socket)
+            
                     
 def handle_new_connection_from_client(conn_socket, length):
     recieved_client_name = conn_socket.recv(length).decode()
