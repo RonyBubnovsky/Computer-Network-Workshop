@@ -1,5 +1,6 @@
 import socket
 import struct
+import threading
 
 ports_list = [4000,4010,4020,4030,4040]
 index_port_to_connet_to = int(input('Enter index port to connect to [0-4]:'))
@@ -24,6 +25,11 @@ def connect_client_to_server(socket):
     
 connect_client_to_server(socket)
 
+def wait_for_messages(socket):
+    print("\n\nthe message :", socket.recv(1024).decode())
+
+threading.Thread(target=wait_for_messages, args=(socket,)).start()
+
 while True:
     message = input("Enter your message in the format of: <client_name> <message> ")
     destination_client_name = message.split(' ')[0]
@@ -33,4 +39,4 @@ while True:
         print("Request to send a message packed.\n")
         socket.send(message_header)# Sending to the server the header of the request to send a message
         socket.send(message.encode()) # Sending to the server the actual message
-        print("Message sent.")
+        print("Message sent.") 

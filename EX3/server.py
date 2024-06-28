@@ -39,8 +39,7 @@ def ask_for_clique(connect_sock, port_to_add_to_dict):
         print("The clique Ports:", only_ports, '\n')
         
         return only_ports
-    
-        
+         
 def connect_to_servers_in_the_clique(clique_ports, my_port):
     count_connections = 0
     for port in clique_ports:
@@ -50,12 +49,11 @@ def connect_to_servers_in_the_clique(clique_ports, my_port):
             print(f"{chosen_port} connected to {port} successfully Through Clique\n")
             servers_im_connected_to[port] = connect_sock # add a new connection to my dictionary of connections
             count_connections += 1
-            connect_sock.send(struct.pack('>bbhh', -30, -30, 0, 0))
+            connect_sock.send(struct.pack('>bbhh', 33, 0, 0, 0)) # Update the clique of the server i connected to
+            connect_sock.send(str(my_port).encode()) # Send my port to the server i connected to
     if count_connections == 0 :
         print("No other server is in the clique")
-                  
-    
-    
+                        
 def try_connecting_to_other_servers():
     found_listening_server = False
     for port in ports_list:
@@ -70,7 +68,6 @@ def try_connecting_to_other_servers():
                 found_listening_server = True
             except ConnectionRefusedError:
                 print(f"No server is listening on port {port}")
-  
   
 def handle_clique_request(conn_socket, client_address):
     print("request to send clique unpacked\n")
@@ -91,13 +88,21 @@ def wait_for_message_from_client(conn_socket):
     header = conn_socket.recv(6)
     type, subtype, length, sublen = struct.unpack('>bbhh', header)
     if type == 3 and subtype == 0: # recieved message header from client
+        sender = ''
+        message_to_send = ''
+        data = ''
         print("recieved message header from client\n")
-        destination_client_name = conn_socket.recv(sublen).decode() # extracting the name of the destination client
+        receiver = conn_socket.recv(sublen).decode() # extracting the name of the destination client
         actual_message = conn_socket.recv(length-sublen).decode()[1:] # extracting the actual message without spacebar
-        print("actual message is:", actual_message, '\n')
-            
-            
-
+        if receiver in connected_clients.keys():
+            print(f"{receiver} is connected to this server. Forwarding message to {receiver} ...\n")
+            for client, socket in connected_clients.items():
+                if socket == conn_socket: # Finding the source client
+                    sender = client
+                    message_to_send = sender +'\0' + receiver + ' ' + actual_message
+                    data = struct.pack('>bbhh', 4,0, len(message_to_send), 0)
+                    connected_clients[receiver].send(message_to_send.encode())
+                    
 def handle_new_connection_from_client(conn_socket, length):
     recieved_client_name = conn_socket.recv(length).decode()
     if recieved_client_name not in connected_clients.keys():
@@ -108,25 +113,24 @@ def handle_new_connection_from_client(conn_socket, length):
         print("Sent to the client that i added his name to my dictionary\n")
         wait_for_message_from_client(conn_socket)
     else:
-        conn_socket.send(struct.pack('>bbhh', 30, 0, 0, 0))
+        conn_socket.send(struct.pack('>bbhh', 30, 0, 0, 0)) # throw the message
         print(f"{recieved_client_name} is already in my dictionary\n")
-        
-     
-    
-    
+         
 threading.Thread(target=try_connecting_to_other_servers).start()
 def respond_to_client(conn_socket, client_address):
     print('start listening from', client_address, '\n')
     data = conn_socket.recv(6)
     type, subtype, length, sublen = struct.unpack('>bbhh', data)
-    print(f'type : {type}, subtype : {subtype}, length : {length}, sublen : {sublen}\n')
     if type == 0 and subtype == 0: # the other server requested my clique
         handle_clique_request(conn_socket, client_address)
-    if type == 2 and subtype == 1: # recieved new connection header from client
+        
+    elif type == 33: # A server connected to me through Clique, Therefore i need to update my clique
+        port_to_add = conn_socket.recv(4) # the port i need to add to my dict
+        servers_im_connected_to[int((port_to_add.decode()))] = conn_socket # add the port that connects to me to my dict
+        
+    elif type == 2 and subtype == 1: # recieved new connection header from client
         handle_new_connection_from_client(conn_socket, length)
-        
-        
-
+            
 while True:
     conn, client_address = sock.accept()
     print('new connection from', client_address)
