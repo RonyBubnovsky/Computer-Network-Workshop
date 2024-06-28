@@ -44,10 +44,11 @@ def ask_for_clique(connect_sock, port_to_add_to_dict):
 def connect_to_servers_in_the_clique(clique_ports, my_port):
     count_connections = 0
     for port in clique_ports:
-        if port != my_port:
+        if port != my_port: # every server in the clique except myself
             connect_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
             connect_sock.connect(('127.0.0.1', port))
             print(f"{chosen_port} connected to {port} successfully Through Clique\n")
+            servers_im_connected_to[port] = connect_sock # add a new connection to my dictionary of connections
             count_connections += 1
             connect_sock.send(struct.pack('>bbhh', -30, -30, 0, 0))
     if count_connections == 0 :
@@ -55,7 +56,6 @@ def connect_to_servers_in_the_clique(clique_ports, my_port):
                   
     
     
-
 def try_connecting_to_other_servers():
     found_listening_server = False
     for port in ports_list:
@@ -87,20 +87,39 @@ def handle_clique_request(conn_socket, client_address):
         conn_socket.send(ip_and_ports_string[:-1].encode())
         print("clique to send sent\n")         
 
+def wait_for_message_from_client(conn_socket):
+    header = conn_socket.recv(6)
+    type, subtype, length, sublen = struct.unpack('>bbhh', header)
+    if type == 3 and subtype == 0: # recieved message header from client
+        print("recieved message header from client\n")
+        destination_client_name = conn_socket.recv(sublen).decode() # extracting the name of the destination client
+        actual_message = conn_socket.recv(length-sublen).decode()[1:] # extracting the actual message without spacebar
+        print("actual message is:", actual_message, '\n')
+            
+            
 
 def handle_new_connection_from_client(conn_socket, length):
-     connected_clients[conn_socket.recv(length).decode()] = conn_socket # adding the client and the connection to the client dictionary
-     print("My connected clients are: ", connected_clients, '\n')
-     conn_socket.send(struct.pack('>bbhh', 2, 0, 0, 0))
-     print("Sent to the client that i added his name to my dictionary\n")
+    recieved_client_name = conn_socket.recv(length).decode()
+    if recieved_client_name not in connected_clients.keys():
+        connected_clients[recieved_client_name] = conn_socket # adding the client and the connection to the client dictionary
+        print(f"Successfully added {recieved_client_name} to my dictionary\n")
+        print("My connected clients are: ", connected_clients, '\n')
+        conn_socket.send(struct.pack('>bbhh', 2, 0, 0, 0))
+        print("Sent to the client that i added his name to my dictionary\n")
+        wait_for_message_from_client(conn_socket)
+    else:
+        conn_socket.send(struct.pack('>bbhh', 30, 0, 0, 0))
+        print(f"{recieved_client_name} is already in my dictionary\n")
+        
      
     
     
 threading.Thread(target=try_connecting_to_other_servers).start()
 def respond_to_client(conn_socket, client_address):
-    print('start listening from', client_address)
+    print('start listening from', client_address, '\n')
     data = conn_socket.recv(6)
     type, subtype, length, sublen = struct.unpack('>bbhh', data)
+    print(f'type : {type}, subtype : {subtype}, length : {length}, sublen : {sublen}\n')
     if type == 0 and subtype == 0: # the other server requested my clique
         handle_clique_request(conn_socket, client_address)
     if type == 2 and subtype == 1: # recieved new connection header from client
