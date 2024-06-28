@@ -79,8 +79,8 @@ def handle_clique_request(conn_socket, client_address):
     print("The dict i need to send is: ", servers_im_connected_to, '\n')
     ip_and_ports_string = ""
     if len(servers_im_connected_to) > 0:
-        for port, address in servers_im_connected_to.items():
-            ip_and_ports_string += str(address[0]) + ':' + str(port) + '\0'
+        for port in servers_im_connected_to.keys():
+            ip_and_ports_string += '127.0.0.1' + ':' + str(port) + '\0'
         data_to_unpack = struct.pack('>bbhh', 1, 0, len(ip_and_ports_string)-1, 0)
         print("clique to send packed\n")
         conn_socket.send(data_to_unpack)
