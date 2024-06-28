@@ -27,17 +27,18 @@ def ask_for_clique(connect_sock, port_to_add_to_dict):
     print("received first 6 bytes of clique answer\n")
     
     type, subtype, length, sublen = struct.unpack('>bbhh', returned_data)
-    unpacked_data = connect_sock.recv(length)
-    print("received the clique data\n")
-    print("the clique:", unpacked_data.decode(), '\n')
-    
-    splitted_clique = unpacked_data.decode().split('\0')
-    only_ports = []
-    for address in splitted_clique:
-        only_ports.append(int(address.split(':')[1]))
-    print("The clique Ports:", only_ports, '\n')
-    
-    return only_ports
+    if type == 1 and subtype == 0: # Answer from the server. receiving the clique.
+        unpacked_data = connect_sock.recv(length)
+        print("received the clique data\n")
+        print("the clique:", unpacked_data.decode(), '\n')
+        
+        splitted_clique = unpacked_data.decode().split('\0')
+        only_ports = []
+        for address in splitted_clique:
+            only_ports.append(int(address.split(':')[1]))
+        print("The clique Ports:", only_ports, '\n')
+        
+        return only_ports
     
         
 def connect_to_servers_in_the_clique(clique_ports, my_port):
@@ -63,12 +64,13 @@ def try_connecting_to_other_servers():
                 connect_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
                 connect_sock.connect(('127.0.0.1', port))
                 print(f"{chosen_port} connected to {port} successfully. requesting from {port} its connected servers list...\n")
-                servers_im_connected_to[port] = connect_sock.getsockname()
-                clique_ports = ask_for_clique(connect_sock, chosen_port)
-                connect_to_servers_in_the_clique(clique_ports, chosen_port)
+                servers_im_connected_to[port] = connect_sock.getsockname() 
+                clique_ports = ask_for_clique(connect_sock, chosen_port) # Ask for the clique of the other server
+                connect_to_servers_in_the_clique(clique_ports, chosen_port) # Connect to the other servers in the received clique
                 found_listening_server = True
             except ConnectionRefusedError:
                 print(f"No server is listening on port {port}")
+            
 
 threading.Thread(target=try_connecting_to_other_servers).start()
 def respond_to_client(conn_socket, client_address):
