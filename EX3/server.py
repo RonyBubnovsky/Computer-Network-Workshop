@@ -95,14 +95,15 @@ def forward_message_between_clients_in_the_same_server(receiver, actual_message,
             connected_clients[receiver].send(message_to_send.encode())
     
 def wait_for_message_from_client(conn_socket):
-    header = conn_socket.recv(6)
-    type, subtype, length, sublen = struct.unpack('>bbhh', header)
-    if type == 3 and subtype == 0: # recieved message header from client
-        print("recieved message header from client\n")
-        receiver = conn_socket.recv(sublen).decode() # extracting the name of the destination client
-        actual_message = conn_socket.recv(length-sublen).decode()[1:] # extracting the actual message without spacebar
-        if receiver in connected_clients.keys():
-            forward_message_between_clients_in_the_same_server(receiver, actual_message, conn_socket)
+    while True:
+        header = conn_socket.recv(6)
+        type, subtype, length, sublen = struct.unpack('>bbhh', header)
+        if type == 3 and subtype == 0: # recieved message header from client
+            print("recieved message header from client\n")
+            receiver = conn_socket.recv(sublen).decode() # extracting the name of the destination client
+            actual_message = conn_socket.recv(length-sublen).decode()[1:] # extracting the actual message without spacebar
+            if receiver in connected_clients.keys():
+                forward_message_between_clients_in_the_same_server(receiver, actual_message, conn_socket)
             
                     
 def handle_new_connection_from_client(conn_socket, length):
