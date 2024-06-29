@@ -10,9 +10,9 @@ index_choice = int(input("Choose an index [0-4] :"))
 chosen_port = ports_list[index_choice]
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
-sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+# sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 sock.bind(('0.0.0.0', chosen_port))
-sock.listen(1)
+sock.listen(5)
 print("New server is listening on port number", chosen_port)
 
 def ask_for_clique(connect_sock, port_to_add_to_dict, port):
@@ -45,7 +45,7 @@ def connect_to_servers_in_the_clique(clique_ports, my_port):
     for port in clique_ports:
         if port != my_port: # every server in the clique except myself
             connect_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
-            connect_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            # connect_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             connect_sock.connect(('127.0.0.1', port))
             print(f"{chosen_port} connected to {port} successfully Through Clique\n")
             servers_im_connected_to[port] = connect_sock # add a new connection to my dictionary of connections
@@ -61,7 +61,7 @@ def try_connecting_to_other_servers():
         if port != chosen_port and not found_listening_server:
             try:
                 connect_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
-                connect_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                # connect_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
                 connect_sock.connect(('127.0.0.1', port))
                 print(f"{chosen_port} connected to {port} successfully. requesting from {port} its connected servers list...\n")
                 servers_im_connected_to[port] = connect_sock
@@ -148,7 +148,7 @@ threading.Thread(target=try_connecting_to_other_servers).start()
 def respond_to_client(conn_socket, client_address):
     while True:
         print('start listening from', client_address, '\n')
-        conn_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        # conn_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         header = conn_socket.recv(6)
         type, subtype, length, sublen = struct.unpack('>bbhh', header)
         if type == 0 and subtype == 0: # the other server requested my clique
