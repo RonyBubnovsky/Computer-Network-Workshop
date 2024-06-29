@@ -76,7 +76,9 @@ def try_connecting_to_other_servers():
 def handle_clique_request(conn_socket, client_address):
     print("request to send clique unpacked\n")
     port_to_add = conn_socket.recv(4) # the port i need to add to my dict
-    servers_im_connected_to[int((port_to_add.decode()))] = conn_socket # add the port that connects to me to my dict
+    sock3 = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
+    sock3.connect(('127.0.0.1', int(port_to_add.decode())))
+    servers_im_connected_to[int((port_to_add.decode()))] = sock3 # add the port that connects to me to my dict
     print("The dict i need to send is: ", servers_im_connected_to, '\n')
     ip_and_ports_string = ""
     if len(servers_im_connected_to) > 0:
