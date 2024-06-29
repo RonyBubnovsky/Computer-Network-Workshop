@@ -15,7 +15,7 @@ sock.bind(('0.0.0.0', chosen_port))
 sock.listen(1)
 print("New server is listening on port number", chosen_port)
 
-def ask_for_clique(connect_sock, port_to_add_to_dict):
+def ask_for_clique(connect_sock, port_to_add_to_dict, port):
     data = struct.pack('>bbhh', 0, 0, 0, 0)
     print("request to get the clique packed\n")
     
@@ -36,7 +36,7 @@ def ask_for_clique(connect_sock, port_to_add_to_dict):
         only_ports = []
         for address in splitted_clique:
             only_ports.append(int(address.split(':')[1]))
-        print("The clique Ports:", only_ports, '\n')
+        print(f"The clique Ports recieved from {port}: {only_ports}\n")
         
         return only_ports
          
@@ -63,7 +63,7 @@ def try_connecting_to_other_servers():
                 connect_sock.connect(('127.0.0.1', port))
                 print(f"{chosen_port} connected to {port} successfully. requesting from {port} its connected servers list...\n")
                 servers_im_connected_to[port] = connect_sock 
-                clique_ports = ask_for_clique(connect_sock, chosen_port) # Ask for the clique of the other server
+                clique_ports = ask_for_clique(connect_sock, chosen_port, port) # Ask for the clique of the other server
                 connect_to_servers_in_the_clique(clique_ports, chosen_port) # Connect to the other servers in the received clique
                 found_listening_server = True
             except ConnectionRefusedError:
@@ -94,20 +94,7 @@ def forward_message_between_clients_in_the_same_server(receiver, actual_message,
             data = struct.pack('>bbhh', 3,0, len(message_to_send), sublength)
             connected_clients[receiver].send(data)
             connected_clients[receiver].send(message_to_send.encode()) 
-    
-# def handle_broadcast_request(receiver, actual_message, receiver_socket, conn_socket):
-#     print("The receiver socket is: ", conn_socket, '\n')
-#     if receiver_socket == conn_socket:
-#         print("They are equal")
-#     else:
-#         print("They are not equal")
-#     while True:    
-#         header = receiver_socket.recv(6)
-#         print(f"header: ", header, '\n')
-#         type, subtype, length, sublen = struct.unpack('>bbhh', header)  
-#         print(f"type: {type}, subtype: {subtype}, length: {length}, sublen")
-#         if type == 4:
-#             print("bitch")
+
 
 def broadcast_message(receiver, actual_message, conn_socket):
     print(f"{receiver} is not connected to this server. Broadcasting message to other servers in the clique...\n")
@@ -116,13 +103,17 @@ def broadcast_message(receiver, actual_message, conn_socket):
         if socket == conn_socket: # Finding the source client
             sender = client 
     for port in servers_im_connected_to.keys():
+        print("My ports are: ", list(servers_im_connected_to.keys()), '\n')
         print(f"Packing header to port {port}\n")
-        header = struct.pack('>bbhh', 4,0, 0, 0) # Packing to the server the header of the request to send a message
-        print(f"Sending header to port {port}\n")
         print(f"my ports are: ", list(servers_im_connected_to.keys()), '\n')
-        print(f"my sockets are: ", list(servers_im_connected_to.values()), '\n')
+        message = sender + '\0' + receiver + ' ' + actual_message
+        header = struct.pack('>bbhh', 4,0, len(message), len(sender + '\0' + receiver)) # Packing to the server the header of the request to send a message
+        print(f"Sending header to port {port}\n")
         servers_im_connected_to[port].send(header) # Sending to the server the header of the request to send a message
         print(f"Sent header to port {port}\n")
+        servers_im_connected_to[port].send(message.encode())
+        print(f"Sent message to port {port}\n")
+        
         
 
                                     
@@ -137,6 +128,16 @@ def handle_new_connection_from_client(conn_socket, length):
     else:
         conn_socket.send(struct.pack('>bbhh', 30, 0, 0, 0)) # throw the message
         print(f"{recieved_client_name} is already in my dictionary\n")
+        
+def handle_messages(conn_socket, length, sublen):
+    print("recieved message header from client\n")
+    receiver = conn_socket.recv(sublen).decode() # extracting the name of the destination client
+    actual_message = conn_socket.recv(length-sublen).decode()[1:] # extracting the actual message without spacebar
+    if receiver in connected_clients.keys(): # If the destination client is in my dictionary
+        forward_message_between_clients_in_the_same_server(receiver, actual_message, conn_socket) 
+    else: # If the destination client is not in my dictionary
+        broadcast_message(receiver, actual_message, conn_socket)
+    
          
 threading.Thread(target=try_connecting_to_other_servers).start()
 def respond_to_client(conn_socket, client_address):
@@ -154,17 +155,21 @@ def respond_to_client(conn_socket, client_address):
         elif type == 2 and subtype == 1: # recieved new connection header from client
             handle_new_connection_from_client(conn_socket, length)
             
-        elif type == 3 and subtype == 0: # recieved message header from client abcde[1:]  
-            print("recieved message header from client\n")
-            receiver = conn_socket.recv(sublen).decode() # extracting the name of the destination client
-            actual_message = conn_socket.recv(length-sublen).decode()[1:] # extracting the actual message without spacebar
-            if receiver in connected_clients.keys(): # If the destination client is in my dictionary
-                forward_message_between_clients_in_the_same_server(receiver, actual_message, conn_socket) 
-            else: # If the destination client is not in my dictionary
-                broadcast_message(receiver, actual_message, conn_socket)
+        elif type == 3 and subtype == 0: # recieved message header from client  
+            handle_messages(conn_socket, length, sublen)
             
-        elif type == 4: 
-            print("lets finish")
+        elif type == 4 and subtype == 0: # recieved broadcast message header from server  
+            print("im it type 4")
+            sender, reciever = conn_socket.recv(sublen).decode().split('\0') # Unpacking the sender and reciever names
+            message = conn_socket.recv(length-sublen).decode() # Unpacking the actual message
+            print(f"sender is {sender} sending a message to {reciever}\n")
+            print("The message is: ", message, '\n')
+            for client in connected_clients.keys():
+                if client == reciever:
+                    connected_clients[client].send(struct.pack('>bbhh', 3, 0, len(sender +'\0' + reciever + ' ' + message), len(str(sender + '\0' + reciever))))
+                    connected_clients[client].send((sender + '\0' + reciever).encode()) 
+                    connected_clients[client].send(message.encode())
+                    print(f"Sent message to {client}\n")
     
             
 while True:
