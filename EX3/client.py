@@ -32,7 +32,7 @@ def wait_for_messages(socket):
         if type == 3: # recieved message header from client
             sender, reciever = socket.recv(sublen).decode().split('\0') # Unpacking the sender and reciever names
             message = socket.recv(length-sublen).decode()[1:] # Unpacking the actual message
-            print(f"Message from {sender} to {reciever}: {message}\n")
+            print(f"\nMessage from {sender} to {reciever}: {message}\n")
 
 threading.Thread(target=wait_for_messages, args=(socket,)).start()
 
@@ -45,4 +45,4 @@ while True:
         print("Request to send a message packed.\n")
         socket.send(message_header)# Sending to the server the header of the request to send a message
         socket.send(message.encode()) # Sending to the server the actual message
-        print("Message sent.") 
+        print("Message sent.\n") 
