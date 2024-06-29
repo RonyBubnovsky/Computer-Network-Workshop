@@ -125,25 +125,7 @@ def broadcast_message(receiver, actual_message, conn_socket):
         print(f"Sent header to port {port}\n")
         
 
-        
-    
-def wait_for_message_from_client(conn_socket):
-    while True:
-        header = conn_socket.recv(6)
-        type, subtype, length, sublen = struct.unpack('>bbhh', header)
-        if type == 3 and subtype == 0: # recieved message header from client abcde[1:]  
-            print("recieved message header from client\n")
-            receiver = conn_socket.recv(sublen).decode() # extracting the name of the destination client
-            actual_message = conn_socket.recv(length-sublen).decode()[1:] # extracting the actual message without spacebar
-            if receiver in connected_clients.keys(): # If the destination client is in my dictionary
-                forward_message_between_clients_in_the_same_server(receiver, actual_message, conn_socket) 
-            else: # If the destination client is not in my dictionary
-                broadcast_message(receiver, actual_message, conn_socket)
-
-                
-                
-            
-                    
+                                    
 def handle_new_connection_from_client(conn_socket, length):
     recieved_client_name = conn_socket.recv(length).decode()
     if recieved_client_name not in connected_clients.keys():
@@ -152,7 +134,6 @@ def handle_new_connection_from_client(conn_socket, length):
         print("My connected clients are: ", list(connected_clients.keys()), '\n')
         conn_socket.send(struct.pack('>bbhh', 2, 0, 0, 0))
         print("Sent to the client that i added his name to my dictionary\n")
-        threading.Thread(target=wait_for_message_from_client, args=(conn_socket,)).start()
     else:
         conn_socket.send(struct.pack('>bbhh', 30, 0, 0, 0)) # throw the message
         print(f"{recieved_client_name} is already in my dictionary\n")
@@ -173,8 +154,17 @@ def respond_to_client(conn_socket, client_address):
         elif type == 2 and subtype == 1: # recieved new connection header from client
             handle_new_connection_from_client(conn_socket, length)
             
+        elif type == 3 and subtype == 0: # recieved message header from client abcde[1:]  
+            print("recieved message header from client\n")
+            receiver = conn_socket.recv(sublen).decode() # extracting the name of the destination client
+            actual_message = conn_socket.recv(length-sublen).decode()[1:] # extracting the actual message without spacebar
+            if receiver in connected_clients.keys(): # If the destination client is in my dictionary
+                forward_message_between_clients_in_the_same_server(receiver, actual_message, conn_socket) 
+            else: # If the destination client is not in my dictionary
+                broadcast_message(receiver, actual_message, conn_socket)
+            
         elif type == 4: 
-            print("sdsdsdsd")
+            print("lets finish")
     
             
 while True:
