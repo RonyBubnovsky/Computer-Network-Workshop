@@ -10,7 +10,6 @@ index_choice = int(input("Choose an index [0-4] :"))
 chosen_port = ports_list[index_choice]
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
-# sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 sock.bind(('0.0.0.0', chosen_port))
 sock.listen(5)
 print("New server is listening on port number", chosen_port)
@@ -45,7 +44,6 @@ def connect_to_servers_in_the_clique(clique_ports, my_port):
     for port in clique_ports:
         if port != my_port: # every server in the clique except myself
             connect_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
-            # connect_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             connect_sock.connect(('127.0.0.1', port))
             print(f"{chosen_port} connected to {port} successfully Through Clique\n")
             servers_im_connected_to[port] = connect_sock # add a new connection to my dictionary of connections
@@ -61,7 +59,6 @@ def try_connecting_to_other_servers():
         if port != chosen_port and not found_listening_server:
             try:
                 connect_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
-                # connect_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
                 connect_sock.connect(('127.0.0.1', port))
                 print(f"{chosen_port} connected to {port} successfully. requesting from {port} its connected servers list...\n")
                 servers_im_connected_to[port] = connect_sock
@@ -79,7 +76,6 @@ def handle_clique_request(conn_socket, client_address):
     sock3 = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
     sock3.connect(('127.0.0.1', int(port_to_add.decode())))
     servers_im_connected_to[int((port_to_add.decode()))] = sock3 # add the port that connects to me to my dict
-    print("The dict i need to send is: ", servers_im_connected_to, '\n')
     ip_and_ports_string = ""
     if len(servers_im_connected_to) > 0:
         for port in servers_im_connected_to.keys():
@@ -88,7 +84,6 @@ def handle_clique_request(conn_socket, client_address):
         print("clique to send packed\n")
         conn_socket.send(data_to_unpack)
         conn_socket.send(ip_and_ports_string[:-1].encode())
-        print("socket that is working" , conn_socket)
         print("clique to send sent\n")         
 
 def forward_message_between_clients_in_the_same_server(receiver, actual_message, conn_socket):
@@ -150,7 +145,6 @@ threading.Thread(target=try_connecting_to_other_servers).start()
 def respond_to_client(conn_socket, client_address):
     while True:
         print('start listening from', client_address, '\n')
-        # conn_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         header = conn_socket.recv(6)
         type, subtype, length, sublen = struct.unpack('>bbhh', header)
         if type == 0 and subtype == 0: # the other server requested my clique
@@ -170,7 +164,6 @@ def respond_to_client(conn_socket, client_address):
             handle_messages(conn_socket, length, sublen)
             
         elif type == 4 and subtype == 0: # recieved broadcast message header from server  
-            print("im it type 4")
             sender, reciever = conn_socket.recv(sublen).decode().split('\0') # Unpacking the sender and reciever names
             message = conn_socket.recv(length-sublen).decode() # Unpacking the actual message
             print(f"sender is {sender} sending a message to {reciever}\n")
