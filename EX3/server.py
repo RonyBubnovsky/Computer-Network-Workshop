@@ -82,6 +82,7 @@ def handle_clique_request(conn_socket, client_address):
         print("clique to send packed\n")
         conn_socket.send(data_to_unpack)
         conn_socket.send(ip_and_ports_string[:-1].encode())
+        print("socket that is working" , conn_socket)
         print("clique to send sent\n")         
 
 def forward_message_between_clients_in_the_same_server(receiver, actual_message, conn_socket):
@@ -92,18 +93,55 @@ def forward_message_between_clients_in_the_same_server(receiver, actual_message,
             sublength = len(client +'\0' + receiver)
             data = struct.pack('>bbhh', 3,0, len(message_to_send), sublength)
             connected_clients[receiver].send(data)
-            connected_clients[receiver].send(message_to_send.encode())
+            connected_clients[receiver].send(message_to_send.encode()) 
+    
+# def handle_broadcast_request(receiver, actual_message, receiver_socket, conn_socket):
+#     print("The receiver socket is: ", conn_socket, '\n')
+#     if receiver_socket == conn_socket:
+#         print("They are equal")
+#     else:
+#         print("They are not equal")
+#     while True:    
+#         header = receiver_socket.recv(6)
+#         print(f"header: ", header, '\n')
+#         type, subtype, length, sublen = struct.unpack('>bbhh', header)  
+#         print(f"type: {type}, subtype: {subtype}, length: {length}, sublen")
+#         if type == 4:
+#             print("bitch")
+
+def broadcast_message(receiver, actual_message, conn_socket):
+    print(f"{receiver} is not connected to this server. Broadcasting message to other servers in the clique...\n")
+    print("My connected ports are: ", list(servers_im_connected_to.keys()), '\n')
+    for client, socket in connected_clients.items():
+        if socket == conn_socket: # Finding the source client
+            sender = client 
+    for port in servers_im_connected_to.keys():
+        print(f"Packing header to port {port}\n")
+        header = struct.pack('>bbhh', 4,0, 0, 0) # Packing to the server the header of the request to send a message
+        print(f"Sending header to port {port}\n")
+        print(f"my ports are: ", list(servers_im_connected_to.keys()), '\n')
+        print(f"my sockets are: ", list(servers_im_connected_to.values()), '\n')
+        servers_im_connected_to[port].send(header) # Sending to the server the header of the request to send a message
+        print(f"Sent header to port {port}\n")
+        
+
+        
     
 def wait_for_message_from_client(conn_socket):
     while True:
         header = conn_socket.recv(6)
         type, subtype, length, sublen = struct.unpack('>bbhh', header)
-        if type == 3 and subtype == 0: # recieved message header from client
+        if type == 3 and subtype == 0: # recieved message header from client abcde[1:]  
             print("recieved message header from client\n")
             receiver = conn_socket.recv(sublen).decode() # extracting the name of the destination client
             actual_message = conn_socket.recv(length-sublen).decode()[1:] # extracting the actual message without spacebar
-            if receiver in connected_clients.keys():
-                forward_message_between_clients_in_the_same_server(receiver, actual_message, conn_socket)
+            if receiver in connected_clients.keys(): # If the destination client is in my dictionary
+                forward_message_between_clients_in_the_same_server(receiver, actual_message, conn_socket) 
+            else: # If the destination client is not in my dictionary
+                broadcast_message(receiver, actual_message, conn_socket)
+
+                
+                
             
                     
 def handle_new_connection_from_client(conn_socket, length):
@@ -111,28 +149,33 @@ def handle_new_connection_from_client(conn_socket, length):
     if recieved_client_name not in connected_clients.keys():
         connected_clients[recieved_client_name] = conn_socket # adding the client and the connection to the client dictionary
         print(f"Successfully added {recieved_client_name} to my dictionary\n")
-        print("My connected clients are: ", connected_clients, '\n')
+        print("My connected clients are: ", list(connected_clients.keys()), '\n')
         conn_socket.send(struct.pack('>bbhh', 2, 0, 0, 0))
         print("Sent to the client that i added his name to my dictionary\n")
-        wait_for_message_from_client(conn_socket)
+        threading.Thread(target=wait_for_message_from_client, args=(conn_socket,)).start()
     else:
         conn_socket.send(struct.pack('>bbhh', 30, 0, 0, 0)) # throw the message
         print(f"{recieved_client_name} is already in my dictionary\n")
          
 threading.Thread(target=try_connecting_to_other_servers).start()
 def respond_to_client(conn_socket, client_address):
-    print('start listening from', client_address, '\n')
-    data = conn_socket.recv(6)
-    type, subtype, length, sublen = struct.unpack('>bbhh', data)
-    if type == 0 and subtype == 0: # the other server requested my clique
-        handle_clique_request(conn_socket, client_address)
-        
-    elif type == 33: # A server connected to me through Clique, Therefore i need to update my clique
-        port_to_add = conn_socket.recv(4) # the port i need to add to my dict
-        servers_im_connected_to[int((port_to_add.decode()))] = conn_socket # add the port that connects to me to my dict
-        
-    elif type == 2 and subtype == 1: # recieved new connection header from client
-        handle_new_connection_from_client(conn_socket, length)
+    while True:
+        print('start listening from', client_address, '\n')
+        header = conn_socket.recv(6)
+        type, subtype, length, sublen = struct.unpack('>bbhh', header)
+        if type == 0 and subtype == 0: # the other server requested my clique
+            handle_clique_request(conn_socket, client_address)
+            
+        elif type == 33: # A server connected to me through Clique, Therefore i need to update my clique
+            port_to_add = conn_socket.recv(4) # the port i need to add to my dict
+            servers_im_connected_to[int((port_to_add.decode()))] = conn_socket # add the port that connects to me to my dict
+            
+        elif type == 2 and subtype == 1: # recieved new connection header from client
+            handle_new_connection_from_client(conn_socket, length)
+            
+        elif type == 4: 
+            print("sdsdsdsd")
+    
             
 while True:
     conn, client_address = sock.accept()
