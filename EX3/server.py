@@ -6,7 +6,7 @@ servers_im_connected_to = {}
 connected_clients = {}
 
 ports_list = [4000, 4010, 4020, 4030, 4040]
-index_choice = int(input("Choose an index [0-4] :"))
+index_choice = int(input("Choose an index [0-4] : "))
 chosen_port = ports_list[index_choice]
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
@@ -16,20 +16,20 @@ print("New server is listening on port number", chosen_port)
 
 def ask_for_clique(connect_sock, port_to_add_to_dict, port):
     data = struct.pack('>bbhh', 0, 0, 0, 0)
-    print("request to get the clique packed\n")
+    print("Request to get the clique packed\n")
     
     connect_sock.send(data)
     connect_sock.send(str(port_to_add_to_dict).encode())
-    print("request to get the clique sent\n")
+    print("Request to get the clique sent\n")
     
     returned_data = connect_sock.recv(6)
-    print("received first 6 bytes of clique answer\n")
+    print("Received first 6 bytes of clique answer\n")
     
     type, subtype, length, sublen = struct.unpack('>bbhh', returned_data)
     if type == 1 and subtype == 0: # Answer from the server. receiving the clique.
         unpacked_data = connect_sock.recv(length)
-        print("received the clique data\n")
-        print("the clique:", unpacked_data.decode(), '\n')
+        print("Received the clique data\n")
+        print("The clique:", unpacked_data.decode(), '\n')
         
         splitted_clique = unpacked_data.decode().split('\0')
         only_ports = []
@@ -164,12 +164,18 @@ def respond_to_client(conn_socket, client_address):
             message = conn_socket.recv(length-sublen).decode() # Unpacking the actual message
             print(f"Sender is {sender} sending a message to {reciever}\n")
             print("The message is: ", message, '\n')
+            found_client = False
             for client in connected_clients.keys():
                 if client == reciever:
+                    found_client = True
                     connected_clients[client].send(struct.pack('>bbhh', 3, 0, len(sender +'\0' + reciever + ' ' + message), len(str(sender + '\0' + reciever))))
                     connected_clients[client].send((sender + '\0' + reciever).encode()) 
                     connected_clients[client].send(message.encode())
                     print(f"Sent message to {client}\n")
+            if not found_client:
+                print(f"{reciever} is not connected to this server, throwing the message\n")
+                
+                    
     
             
 while True:
