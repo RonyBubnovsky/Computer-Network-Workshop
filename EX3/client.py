@@ -10,7 +10,7 @@ def connect_client_to_server(socket):
     try:
         socket.connect(('127.0.0.1', chosen_port_to_connet_to))
         print(f"Connection to port {chosen_port_to_connet_to} successful.\n")
-        client_name = input('Enter your name:')
+        client_name = input('Enter your name: ')
         request_to_connect_header = struct.pack('>bbhh', 2,1,len(client_name),0) # Packing to the server the header of the request to connect
         print('Header of the client name packed.\n')
         socket.send(request_to_connect_header) # Sending to the server the header of the request to connect
@@ -43,7 +43,7 @@ threading.Thread(target=wait_for_messages, args=(socket,)).start()
 while True:
     message = input("Enter your message in the format of: <client_name> <message> ")
     receiver = message.split(' ')[0]
-    print("destination client name:", receiver, '\n')
+    print("Receiver name:", receiver, '\n')
     message_header = struct.pack('>bbhh', 3, 0, len(message), len(receiver)) # Packing to the server the header of the request to send a message
     print("Request to send a message packed.\n")
     socket.send(message_header)# Sending to the server the header of the request to send a message
