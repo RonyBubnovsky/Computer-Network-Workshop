@@ -10,7 +10,7 @@ def calculate_minimal_port(minimal_socket):
     connections_dict = {}
     connections_dict[chosen_port_to_connect_to] = minimal_socket
     ports_to_check = ask_for_connected_ports(minimal_socket)
-    print(f"Recieved list of connected ports from {chosen_port_to_connect_to} : {ports_to_check}\n")
+
     
     # Calculating first port rtt
     start = time.time()
@@ -52,8 +52,10 @@ def calculate_minimal_port(minimal_socket):
             answer = connections_dict[port].recv(6)
             type, subtype, length, sublen = struct.unpack('>bbhh', answer)
             if type == 7 and subtype == 1:
-                time.sleep(1)
                 connections_dict[port].close()
+                print(f"Closed connection to {port}\n")
+            else:
+                print(f"Error. Didn't close connection to {port}\n")
             
             
     print(f"The minimal port is {minimal_port} with a RTT of {minimal_rtt}")
