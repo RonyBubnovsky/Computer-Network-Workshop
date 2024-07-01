@@ -126,7 +126,8 @@ def handle_messages(conn_socket, length, sublen):
     
 
 def respond_to_client(conn_socket, client_address):
-    while True:
+    Alive = True
+    while Alive:
         # print('start listening from', client_address, '\n')
         header = conn_socket.recv(6)
         type, subtype, length, sublen = struct.unpack('>bbhh', header)
@@ -176,7 +177,11 @@ def respond_to_client(conn_socket, client_address):
             
         elif type == 7 and subtype == 0:
             print("I am not the fastest RTT. closing connection......\n")
+            conn_socket.send(struct.pack('>bbhh', 7, 1, 0, 0))
             conn_socket.close()
+            print("Connection closed\n")
+            Alive = False
+            
                 
 
 if __name__ == "__main__":    

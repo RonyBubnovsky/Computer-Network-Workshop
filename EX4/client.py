@@ -49,7 +49,11 @@ def calculate_minimal_port(minimal_socket):
     for port in connections_dict.keys():
         if port != minimal_port:
             connections_dict[port].send(struct.pack('>bbhh', 7, 0, 0, 0)) # Send to the server to close the connection
-            connections_dict[port].close()
+            answer = connections_dict[port].recv(6)
+            type, subtype, length, sublen = struct.unpack('>bbhh', answer)
+            if type == 7 and subtype == 1:
+                time.sleep(1)
+                connections_dict[port].close()
             
             
     print(f"The minimal port is {minimal_port} with a RTT of {minimal_rtt}")
@@ -81,6 +85,7 @@ def connect_client_to_server(minimal_socket):
         minimal_socket.connect(('127.0.0.1', chosen_port_to_connect_to))
         print(f"Connection to port {chosen_port_to_connect_to} successful.\n")
         minimal_port = calculate_minimal_port(minimal_socket)
+        
         print(f"Connection to port {minimal_port} successful.\n")
         
         client_name = input('Enter your name: ')
