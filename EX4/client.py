@@ -54,7 +54,7 @@ def connect_client_to_server(socket):
         client_name = input('Enter your name: ')
         request_to_connect_header = struct.pack('>bbhh', 2,1,len(client_name),0) # Packing to the server the header of the request to connect
         print('Header of the client name packed.\n')
-        socket.send(request_to_connect_header) # Sending to the server the header of the request to connect
+        socket.send(request_to_connect_header) # Sending to the server the header of the request to connect.
         socket.send(client_name.encode()) # Sending to the server the name of the client
         print('Header of the client name sent. Waiting for response from server...\n')
         answer_data = socket.recv(6)
