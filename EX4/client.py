@@ -85,7 +85,8 @@ def connect_client_to_server(minimal_socket):
         minimal_socket.connect(('127.0.0.1', chosen_port_to_connect_to))
         print(f"Connection to port {chosen_port_to_connect_to} successful.\n")
         minimal_port = calculate_minimal_port(minimal_socket)
-        
+        minimal_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
+        minimal_socket.connect(('127.0.0.1', minimal_port))
         print(f"Connection to port {minimal_port} successful.\n")
         
         client_name = input('Enter your name: ')
@@ -98,14 +99,17 @@ def connect_client_to_server(minimal_socket):
         answer_data = minimal_socket.recv(6)
         type, subtype, length, sublen = struct.unpack('>bbhh', answer_data)  # Receiving from the server the header of the response to the request to connect
         if type == 2 and subtype == 0: # Server added my name to it's dictionary
-            print(f"{chosen_port_to_connect_to} added my name to it's dictionary.\n")
+            print(f"{minimal_port} added my name to it's dictionary.\n")
         else:
-            print(f"{chosen_port_to_connect_to} didn't add my name.\n")
+            print(f"{minimal_port} didn't add my name.\n")
             exit()
             
     except Exception as e:
-        print(f"Failed to connect to port {chosen_port_to_connect_to}.\n")
+        print(f"Failed to connect to port {minimal_port}.\n")
+        print(e)
         exit()
+        
+    return minimal_socket
     
         
     
@@ -132,7 +136,7 @@ if __name__ == "__main__":
     chosen_port_to_connect_to = ports_list[index_port_to_connet_to]
     minimal_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
     
-    connect_client_to_server(minimal_socket)
+    minimal_socket = connect_client_to_server(minimal_socket)
     
     threading.Thread(target=wait_for_messages, args=(minimal_socket,)).start()
 

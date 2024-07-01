@@ -126,61 +126,67 @@ def handle_messages(conn_socket, length, sublen):
     
 
 def respond_to_client(conn_socket, client_address):
-    Alive = True
-    while Alive:
-        # print('start listening from', client_address, '\n')
-        header = conn_socket.recv(6)
-        type, subtype, length, sublen = struct.unpack('>bbhh', header)
-        if type == 0 and subtype == 0: # the other server requested my clique
-            handle_clique_request(conn_socket, client_address)
-            
-        elif type == 2 and subtype == 0: # A server connected to me through Clique, Therefore i need to update my clique
-            port_to_add = conn_socket.recv(4) # the port i need to add to my dict
-            sock3 = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
-            sock3.connect(('127.0.0.1', int(port_to_add.decode())))
-            print("The new socket is: ", sock3, '\n')
-            print("The address is: ", sock3.getsockname(), '\n')
-            servers_im_connected_to[int(port_to_add.decode())] = sock3 # add the port that connects to me to my dict
-            
-        elif type == 2 and subtype == 1: # recieved new connection header from client
-            handle_new_connection_from_client(conn_socket, length)
-            
-        elif type == 3 and subtype == 0: # recieved message header from client  
-            handle_messages(conn_socket, length, sublen)
-            
-        elif type == 4 and subtype == 0: # recieved broadcast message header from server  
-            sender, reciever = conn_socket.recv(sublen).decode().split('\0') # Unpacking the sender and reciever names
-            message = conn_socket.recv(length-sublen).decode() # Unpacking the actual message
-            print(f"Sender is {sender} sending a message to {reciever}\n")
-            print("The message is: ", message, '\n')
-            found_client = False
-            for client in connected_clients.keys():
-                if client == reciever:
-                    found_client = True
-                    connected_clients[client].send(struct.pack('>bbhh', 3, 0, len(sender +'\0' + reciever + ' ' + message), len(str(sender + '\0' + reciever))))
-                    connected_clients[client].send((sender + '\0' + reciever).encode()) 
-                    connected_clients[client].send(message.encode())
-                    print(f"Sent message to {client}\n")
-            if not found_client:
-                print(f"{reciever} is not connected to this server, throwing the message\n")
+    try:
+        alive = True
+        while alive:
+            # print('start listening from', client_address, '\n')
+            header = conn_socket.recv(6)
+            type, subtype, length, sublen = struct.unpack('>bbhh', header)
+            if type == 0 and subtype == 0: # the other server requested my clique
+                handle_clique_request(conn_socket, client_address)
                 
-        elif type == 5 and subtype == 0:
-            print("Recieved from client request for my connected servers. Sending.......\n")
-            my_connected_ports = repr(list(servers_im_connected_to.keys()))
-            header = struct.pack('>bbhh', 5, 1, len(my_connected_ports),0)
-            conn_socket.send(header)
-            conn_socket.send(my_connected_ports.encode())
+            elif type == 2 and subtype == 0: # A server connected to me through Clique, Therefore i need to update my clique
+                port_to_add = conn_socket.recv(4) # the port i need to add to my dict
+                sock3 = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
+                sock3.connect(('127.0.0.1', int(port_to_add.decode())))
+                print("The new socket is: ", sock3, '\n')
+                print("The address is: ", sock3.getsockname(), '\n')
+                servers_im_connected_to[int(port_to_add.decode())] = sock3 # add the port that connects to me to my dict
+                
+            elif type == 2 and subtype == 1: # recieved new connection header from client
+                handle_new_connection_from_client(conn_socket, length)
+                
+            elif type == 3 and subtype == 0: # recieved message header from client  
+                handle_messages(conn_socket, length, sublen)
+                
+            elif type == 4 and subtype == 0: # recieved broadcast message header from server  
+                sender, reciever = conn_socket.recv(sublen).decode().split('\0') # Unpacking the sender and reciever names
+                message = conn_socket.recv(length-sublen).decode() # Unpacking the actual message
+                print(f"Sender is {sender} sending a message to {reciever}\n")
+                print("The message is: ", message, '\n')
+                found_client = False
+                for client in connected_clients.keys():
+                    if client == reciever:
+                        found_client = True
+                        connected_clients[client].send(struct.pack('>bbhh', 3, 0, len(sender +'\0' + reciever + ' ' + message), len(str(sender + '\0' + reciever))))
+                        connected_clients[client].send((sender + '\0' + reciever).encode()) 
+                        connected_clients[client].send(message.encode())
+                        print(f"Sent message to {client}\n")
+                if not found_client:
+                    print(f"{reciever} is not connected to this server, throwing the message\n")
+                    
+            elif type == 5 and subtype == 0:
+                print("Recieved from client request for my connected servers. Sending.......\n")
+                my_connected_ports = repr(list(servers_im_connected_to.keys()))
+                header = struct.pack('>bbhh', 5, 1, len(my_connected_ports),0)
+                conn_socket.send(header)
+                conn_socket.send(my_connected_ports.encode())
+                
+            elif type == 6 and subtype == 0:
+                print("Recieved echo message from client. Sending echo back.......\n") 
+                conn_socket.send(struct.pack('>bbhh', 6, 1, 0, 0)) # Sending echo back to the client
+                
+            elif type == 7 and subtype == 0:
+                print("I am not the fastest RTT. closing connection......\n")
+                conn_socket.send(struct.pack('>bbhh', 7, 1, 0, 0))
+                conn_socket.close()
+                print("Connection closed\n")
+                alive = False
             
-        elif type == 6 and subtype == 0:
-            print("Recieved echo message from client. Sending echo back.......\n") 
-            conn_socket.send(struct.pack('>bbhh', 6, 1, 0, 0)) # Sending echo back to the client
-            
-        elif type == 7 and subtype == 0:
-            print("I am not the fastest RTT. closing connection......\n")
-            conn_socket.send(struct.pack('>bbhh', 7, 1, 0, 0))
-            conn_socket.close()
-            print("Connection closed\n")
-            Alive = False
+    except Exception as e:
+        pass
+
+        
             
                 
 
