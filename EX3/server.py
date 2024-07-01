@@ -2,17 +2,6 @@ import socket
 import struct
 import threading
 
-servers_im_connected_to = {}
-connected_clients = {}
-
-ports_list = [4000, 4010, 4020, 4030, 4040]
-index_choice = int(input("Choose an index [0-4] : "))
-chosen_port = ports_list[index_choice]
-
-sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
-sock.bind(('0.0.0.0', chosen_port))
-sock.listen(5)
-print("New server is listening on port number", chosen_port)
 
 def ask_for_clique(connect_sock, port_to_add_to_dict, port):
     data = struct.pack('>bbhh', 0, 0, 0, 0)
@@ -48,7 +37,7 @@ def connect_to_servers_in_the_clique(clique_ports, my_port):
             print(f"{chosen_port} connected to {port} successfully Through Clique\n")
             servers_im_connected_to[port] = connect_sock # add a new connection to my dictionary of connections
             count_connections += 1
-            connect_sock.send(struct.pack('>bbhh', 33, 0, 0, 0)) # Update the clique of the server i connected to
+            connect_sock.send(struct.pack('>bbhh', 2, 0, 0, 0)) # Update the clique of the server i connected to
             connect_sock.send(str(my_port).encode()) # Send my port to the server i connected to
     if count_connections == 0 :
         print("No other server is in the clique")
@@ -58,11 +47,12 @@ def try_connecting_to_other_servers():
     for port in ports_list:
         if port != chosen_port and not found_listening_server:
             try:
-                connect_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
+                connect_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0) 
                 connect_sock.connect(('127.0.0.1', port))
                 print(f"{chosen_port} connected to {port} successfully. requesting from {port} its connected servers list...\n")
                 servers_im_connected_to[port] = connect_sock
-                connect_sock.send(struct.pack('>bbhh', 33, 0, 0, 0)) # Update the clique of the server i connected to
+                print("FIRST SOCEKT:\n", connect_sock)
+                connect_sock.send(struct.pack('>bbhh', 2, 0, 0, 0)) # Update the clique of the server i connected to
                 connect_sock.send(str(chosen_port).encode()) # Send my port to the server i connected to
                 clique_ports = ask_for_clique(connect_sock, chosen_port, port) # Ask for the clique of the other server
                 connect_to_servers_in_the_clique(clique_ports, chosen_port) # Connect to the other servers in the received clique
@@ -112,10 +102,7 @@ def broadcast_message(receiver, actual_message, conn_socket):
         print(f"Sent broadcast header to port {port}\n")
         servers_im_connected_to[port].send(message.encode())
         print(f"Sent message to port {port}, waiting to see if {receiver} is connected to {port}....\n")
-        
-        
-
-                                    
+                                            
 def handle_new_connection_from_client(conn_socket, length):
     recieved_client_name = conn_socket.recv(length).decode()
     if recieved_client_name not in connected_clients.keys():
@@ -137,8 +124,7 @@ def handle_messages(conn_socket, length, sublen):
     else: # If the destination client is not in my dictionary
         broadcast_message(receiver, actual_message, conn_socket)
     
-         
-threading.Thread(target=try_connecting_to_other_servers).start()
+
 def respond_to_client(conn_socket, client_address):
     while True:
         # print('start listening from', client_address, '\n')
@@ -147,10 +133,12 @@ def respond_to_client(conn_socket, client_address):
         if type == 0 and subtype == 0: # the other server requested my clique
             handle_clique_request(conn_socket, client_address)
             
-        elif type == 33: # A server connected to me through Clique, Therefore i need to update my clique
+        elif type == 2 and subtype == 0: # A server connected to me through Clique, Therefore i need to update my clique
             port_to_add = conn_socket.recv(4) # the port i need to add to my dict
             sock3 = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
             sock3.connect(('127.0.0.1', int(port_to_add.decode())))
+            print("The new socket is: ", sock3, '\n')
+            print("The address is: ", sock3.getsockname(), '\n')
             servers_im_connected_to[int(port_to_add.decode())] = sock3 # add the port that connects to me to my dict
             
         elif type == 2 and subtype == 1: # recieved new connection header from client
@@ -175,12 +163,29 @@ def respond_to_client(conn_socket, client_address):
             if not found_client:
                 print(f"{reciever} is not connected to this server, throwing the message\n")
                 
+
+if __name__ == "__main__":    
                     
-    
+    servers_im_connected_to = {}
+    connected_clients = {}
+
+    ports_list = [4000, 4010, 4020, 4030, 4040]
+    index_choice = int(input("Choose an index [0-4] : "))
+    chosen_port = ports_list[index_choice]
+
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
+    sock.bind(('0.0.0.0', chosen_port))
+    sock.listen(1)
+    print("New server is listening on port number", chosen_port)  
+
+    threading.Thread(target=try_connecting_to_other_servers).start()  
             
-while True:
-    conn, client_address = sock.accept()
-    print('new connection from', client_address)
-    threading.Thread(target=respond_to_client, args=(conn, client_address)).start()
+    while True:
+        conn, client_address = sock.accept()
+        print('new connection from', client_address)
+        threading.Thread(target=respond_to_client, args=(conn, client_address)).start()
+    
+    
+
     
    
