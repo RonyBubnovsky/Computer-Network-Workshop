@@ -171,8 +171,12 @@ def respond_to_client(conn_socket, client_address):
             conn_socket.send(my_connected_ports.encode())
             
         elif type == 6 and subtype == 0:
-            print("Recieved echo message from client. Sending echo back.......\n")
-            echo_answer = conn_socket.send(struct.pack('>bbhh', 6, 1, 0, 0))
+            print("Recieved echo message from client. Sending echo back.......\n") 
+            conn_socket.send(struct.pack('>bbhh', 6, 1, 0, 0)) # Sending echo back to the client
+            
+        elif type == 7 and subtype == 0:
+            print("I am not the fastest RTT. closing connection......\n")
+            conn_socket.close()
                 
 
 if __name__ == "__main__":    
@@ -185,6 +189,7 @@ if __name__ == "__main__":
     chosen_port = ports_list[index_choice]
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
+    # sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     sock.bind(('0.0.0.0', chosen_port))
     sock.listen(1)
     print("New server is listening on port number", chosen_port)  
@@ -195,6 +200,8 @@ if __name__ == "__main__":
         conn, client_address = sock.accept()
         print('new connection from', client_address)
         threading.Thread(target=respond_to_client, args=(conn, client_address)).start()
+        
+       
     
     
 
