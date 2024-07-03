@@ -3,13 +3,16 @@ import struct
 import threading
 import time
 
-
-
-
+def delete_connections_from_dict(connections_dict, delete_ports):
+    for port in delete_ports:
+        del(connections_dict[port]) 
+    
+    return connections_dict 
 def calculate_minimal_port(minimal_socket):
     connections_dict = {}
     connections_dict[chosen_port_to_connect_to] = minimal_socket
     ports_to_check = ask_for_connected_ports(minimal_socket)
+    ports_to_delete = []
 
     
     # Calculating first port rtt
@@ -46,6 +49,7 @@ def calculate_minimal_port(minimal_socket):
                 minimal_rtt = diffrence
                 minimal_port = port
                 
+                
     for port in connections_dict.keys():
         if port != minimal_port:
             connections_dict[port].send(struct.pack('>bbhh', 7, 0, 0, 0)) # Send to the server to close the connection
@@ -53,14 +57,17 @@ def calculate_minimal_port(minimal_socket):
             type, subtype, length, sublen = struct.unpack('>bbhh', answer)
             if type == 7 and subtype == 1:
                 connections_dict[port].close()
+                ports_to_delete.append(port)
                 print(f"Closed connection to {port}\n")
             else:
                 print(f"Error. Didn't close connection to {port}\n")
-            
-            
+                
+    
+    connections_dict = delete_connections_from_dict(connections_dict, ports_to_delete) # Deleting the ports that are not the minimal port
+                          
     print(f"The minimal port is {minimal_port} with a RTT of {minimal_rtt}")
     
-    minimal_socket = connections_dict[minimal_port]
+    minimal_socket = connections_dict[minimal_port] # Saving the minimal RTT socket
     
     return minimal_port
         
@@ -107,7 +114,7 @@ def connect_client_to_server(minimal_socket):
             exit()
             
     except Exception as e:
-        print(f"Failed to connect to port {minimal_port}.\n")
+        print(f"Failed to connect to port.\n")
         print(e)
         exit()
         
