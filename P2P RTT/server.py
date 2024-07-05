@@ -51,7 +51,6 @@ def try_connecting_to_other_servers():
                 connect_sock.connect(('127.0.0.1', port))
                 print(f"{chosen_port} connected to {port} successfully. requesting from {port} its connected servers list...\n")
                 servers_im_connected_to[port] = connect_sock
-                print("FIRST SOCEKT:\n", connect_sock)
                 connect_sock.send(struct.pack('>bbhh', 2, 0, 0, 0)) # Update the clique of the server i connected to
                 connect_sock.send(str(chosen_port).encode()) # Send my port to the server i connected to
                 clique_ports = ask_for_clique(connect_sock, chosen_port, port) # Ask for the clique of the other server
@@ -139,8 +138,6 @@ def respond_to_client(conn_socket, client_address):
                 port_to_add = conn_socket.recv(4) # the port i need to add to my dict
                 sock3 = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
                 sock3.connect(('127.0.0.1', int(port_to_add.decode())))
-                print("The new socket is: ", sock3, '\n')
-                print("The address is: ", sock3.getsockname(), '\n')
                 servers_im_connected_to[int(port_to_add.decode())] = sock3 # add the port that connects to me to my dict
                 
             elif type == 2 and subtype == 1: # recieved new connection header from client
@@ -179,8 +176,8 @@ def respond_to_client(conn_socket, client_address):
             elif type == 7 and subtype == 0:
                 print("I am not the fastest RTT. closing connection......\n")
                 conn_socket.send(struct.pack('>bbhh', 7, 1, 0, 0))
-                conn_socket.close()
                 print("Connection closed\n")
+                conn_socket.close()
                 alive = False
             
     except Exception as e:
