@@ -21,7 +21,7 @@ def connect_client_to_server(socket):
             print(f"{chosen_port_to_connet_to} didn't add my name.\n")
             exit()
     except Exception as e:
-        print("Failed to connect to port {chosen_port_to_connet_to}.\n")
+        print(f"Failed to connect to port {chosen_port_to_connet_to}.\n")
         exit()
     
 
