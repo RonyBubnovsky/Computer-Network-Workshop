@@ -2,6 +2,7 @@ import socket
 import struct
 import threading
 
+last_connection = 0
 
 def ask_for_clique(connect_sock, port_to_add_to_dict, port):
     data = struct.pack('>bbhh', 0, 0, 0, 0)
@@ -51,6 +52,7 @@ def try_connecting_to_other_servers():
                 connect_sock.connect(('127.0.0.1', port))
                 print(f"{chosen_port} connected to {port} successfully. requesting from {port} its connected servers list...\n")
                 servers_im_connected_to[port] = connect_sock
+                print("FIRST SOCEKT:\n", connect_sock)
                 connect_sock.send(struct.pack('>bbhh', 2, 0, 0, 0)) # Update the clique of the server i connected to
                 connect_sock.send(str(chosen_port).encode()) # Send my port to the server i connected to
                 clique_ports = ask_for_clique(connect_sock, chosen_port, port) # Ask for the clique of the other server
@@ -125,6 +127,11 @@ def handle_messages(conn_socket, length, sublen):
     
 
 def respond_to_client(conn_socket, client_address):
+    global last_connection
+    if last_connection%2 == 0:
+        print("[New Connection] -", conn_socket)
+    last_connection += 1
+
     try:
         alive = True
         while alive:
@@ -138,6 +145,8 @@ def respond_to_client(conn_socket, client_address):
                 port_to_add = conn_socket.recv(4) # the port i need to add to my dict
                 sock3 = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
                 sock3.connect(('127.0.0.1', int(port_to_add.decode())))
+                print("The new socket is: ", sock3, '\n')
+                print("The address is: ", sock3.getsockname(), '\n')
                 servers_im_connected_to[int(port_to_add.decode())] = sock3 # add the port that connects to me to my dict
                 
             elif type == 2 and subtype == 1: # recieved new connection header from client
@@ -176,15 +185,12 @@ def respond_to_client(conn_socket, client_address):
             elif type == 7 and subtype == 0:
                 print("I am not the fastest RTT. closing connection......\n")
                 conn_socket.send(struct.pack('>bbhh', 7, 1, 0, 0))
-                print("Connection closed\n")
                 conn_socket.close()
+                print("Connection closed\n")
                 alive = False
             
     except Exception as e:
         pass
-
-        
-            
                 
 
 if __name__ == "__main__":    
@@ -197,15 +203,15 @@ if __name__ == "__main__":
     chosen_port = ports_list[index_choice]
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
+    # sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     sock.bind(('0.0.0.0', chosen_port))
     sock.listen(1)
-    print("New server is listening on port number", chosen_port)  
+    print("New server is listening on port number", chosen_port) 
 
     threading.Thread(target=try_connecting_to_other_servers).start()  
             
     while True:
         conn, client_address = sock.accept()
-        print('new connection from', client_address)
         threading.Thread(target=respond_to_client, args=(conn, client_address)).start()
         
        
