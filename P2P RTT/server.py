@@ -197,7 +197,6 @@ if __name__ == "__main__":
     chosen_port = ports_list[index_choice]
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
-    # sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     sock.bind(('0.0.0.0', chosen_port))
     sock.listen(1)
     print("New server is listening on port number", chosen_port)  

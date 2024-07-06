@@ -51,7 +51,6 @@ def try_connecting_to_other_servers():
                 connect_sock.connect(('127.0.0.1', port))
                 print(f"{chosen_port} connected to {port} successfully. requesting from {port} its connected servers list...\n")
                 servers_im_connected_to[port] = connect_sock
-                print("FIRST SOCEKT:\n", connect_sock)
                 connect_sock.send(struct.pack('>bbhh', 2, 0, 0, 0)) # Update the clique of the server i connected to
                 connect_sock.send(str(chosen_port).encode()) # Send my port to the server i connected to
                 clique_ports = ask_for_clique(connect_sock, chosen_port, port) # Ask for the clique of the other server
