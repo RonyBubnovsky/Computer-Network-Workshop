@@ -18,15 +18,18 @@ def calculate_minimal_port(minimal_socket):
     # Calculating first port rtt
     start = time.time()
     print(f"Sending echo to {chosen_port_to_connect_to} ...\n")
-    echo_header = struct.pack('>bbhh', 6, 0, 0, 0) 
-    minimal_socket.send(echo_header) # Sending to the server the echo message
+    echo_message = "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz"
+    echo_header = struct.pack('>bbhh', 6, 0, len(echo_message), 0) 
+    minimal_socket.send(echo_header) # Sending to the server the echo message header
+    minimal_socket.send(echo_message.encode()) # Sending to the server the echo message body
     echo_response = minimal_socket.recv(6) # Recieving the echo message from the server
     type, subtype, length, sublen = struct.unpack('>bbhh', echo_response)
     if type == 6 and subtype == 1:
+        minimal_socket.recv(length)
         done = time.time()
         minimal_rtt = done - start
         minimal_port = chosen_port_to_connect_to
-        print(f"Recieved echo from {chosen_port_to_connect_to} with RTT of {minimal_rtt}\n")
+        print(f"Recieved echo message from {chosen_port_to_connect_to} with RTT of {minimal_rtt}\n")
     
     else:
         print(f"Echo didn't come from {chosen_port_to_connect_to}\n")
@@ -37,11 +40,13 @@ def calculate_minimal_port(minimal_socket):
         connections_dict[port] = new_socket
         new_start = time.time()
         print(f"Sending echo to {port} ...\n")
-        echo_header = struct.pack('>bbhh', 6, 0, 0, 0) 
+        echo_header = struct.pack('>bbhh', 6, 0, len(echo_message), 0) 
         new_socket.send(echo_header) # Sending to the server the echo message
+        new_socket.send(echo_message.encode()) # Sending to the server the echo message body
         echo_response = new_socket.recv(6) # Recieving the echo message from the server
         type, subtype, length, sublen = struct.unpack('>bbhh', echo_response)
         if type == 6 and subtype == 1:
+            new_socket.recv(length)
             new_done = time.time()
             diffrence = new_done - new_start
             print(f"Recieved echo from {port} with RTT of {diffrence}\n")
