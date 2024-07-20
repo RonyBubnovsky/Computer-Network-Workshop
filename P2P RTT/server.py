@@ -176,7 +176,6 @@ def respond_to_client(conn_socket, client_address):
             elif type == 6 and subtype == 0:
                 print("Recieved echo message header from client. Unpacking....\n") 
                 echo_message = conn_socket.recv(length) # Unpacking the echo message
-                print("The echo message is: ", echo_message.decode(), '\n')
                 print("Received echo message from client. Sending echo back to the client......\n")
                 conn_socket.send(struct.pack('>bbhh', 6, 1, len(echo_message), 0)) # Sending echo back to the client
                 conn_socket.send(echo_message)
